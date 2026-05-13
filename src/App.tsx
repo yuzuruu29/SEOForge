@@ -44,7 +44,7 @@ const DEFAULT_INPUTS: SEOInputs = {
   topic: '',
   audience: '',
   wordCount: 1200,
-  tone: 'Conversational + Authoritative',
+  tone: 'Conversational',
   secondaryKeywords: '',
 };
 
@@ -133,7 +133,8 @@ export default function App() {
     setResult(null);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      // process.env.GEMINI_API_KEY is mapped in vite.config.ts, but we also support VITE_GEMINI_API_KEY
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY });
       const prompt = `Write an SEO article with these details:
       Primary Keyword: ${inputs.primaryKeyword}
       Topic: ${inputs.topic}
@@ -145,7 +146,7 @@ export default function App() {
       Respond only with the JSON object.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.0-flash",
         contents: prompt,
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
@@ -317,7 +318,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="mt-6">
+            <div className="mt-6 flex flex-col gap-3">
               <button
                 onClick={generateArticle}
                 disabled={isGenerating}
@@ -335,6 +336,21 @@ export default function App() {
                   </>
                 )}
               </button>
+
+              {(result || inputs !== DEFAULT_INPUTS) && (
+                <button
+                  onClick={() => {
+                    setInputs(DEFAULT_INPUTS);
+                    setResult(null);
+                    setError(null);
+                  }}
+                  disabled={isGenerating}
+                  className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Reset Fields
+                </button>
+              )}
 
               {error && (
                 <div className="mt-3 p-3 bg-red-50 border border-red-100 rounded-md flex gap-2 text-red-600 text-xs items-start">
@@ -440,7 +456,7 @@ export default function App() {
                   <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1 flex justify-between items-center">
                     SEO Meta Data
                     <span className="text-slate-500 lowercase opacity-60">
-                      Title: {result.seoTitle.length}/60 &bull; Desc: {result.metaDescription.length}/155 chars
+                      Words: {result.article.trim().split(/\s+/).length} &bull; Title: {result.seoTitle.length}/60 &bull; Desc: {result.metaDescription.length}/155 chars
                     </span>
                   </div>
                   <div className="text-sm mb-1"><span className="font-bold text-slate-900">Title:</span> {result.seoTitle}</div>
